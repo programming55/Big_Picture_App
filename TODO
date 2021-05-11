@@ -1,7 +1,8 @@
 **Essentials**:
-    → Create UI prototype (Sketch) @created(18:52 11-05-2021)
-    → Build basic layout @created(18:53 11-05-2021)
+    ✔ Create UI prototype (Sketch) @created(00:52 12-05-2021) @done(00:52 12-05-2021)
+    ✔ Build basic layout @created(18:53 11-05-2021) @done(00:52 12-05-2021)
     → Add UI Elements @created(18:53 11-05-2021)
+    → Define Data Structures @created(23:20 11-05-2021)
     → Data Persistence @created(18:53 11-05-2021)
     → Theming @created(18:54 11-05-2021)
 
@@ -9,5 +10,5 @@
 **Enhancements**:
     → Drag and Drop @created(18:54 11-05-2021)
     Todo:
-        → View todos in popup @created(19:45 11-05-2021)
-        → Open todos as a new program (code.exe) @created(19:43 11-05-2021)
+        → View to-dos in popup @created(19:45 11-05-2021)
+        → Open to-dos as a new program (code.exe) @created(19:43 11-05-2021)
