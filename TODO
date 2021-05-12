@@ -1,7 +1,9 @@
 **Essentials**:
     ✔ Create UI prototype (Sketch) @created(00:52 12-05-2021) @done(00:52 12-05-2021)
     ✔ Build basic layout @created(18:53 11-05-2021) @done(00:52 12-05-2021)
-    → Add UI Elements @created(18:53 11-05-2021)
+    ✔ Add UI Elements @created(18:53 11-05-2021) @done(02:15 13-05-2021)
+    → Add values for task counters (for each category) @created(02:14 13-05-2021)
+    → Add status bar for each category @created(02:14 13-05-2021)
     → Define Data Structures @created(23:20 11-05-2021)
     → Data Persistence @created(18:53 11-05-2021)
     → Theming @created(18:54 11-05-2021)
