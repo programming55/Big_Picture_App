@@ -2,8 +2,8 @@
     ✔ Create UI prototype (Sketch) @created(00:52 12-05-2021) @done(00:52 12-05-2021)
     ✔ Build basic layout @created(18:53 11-05-2021) @done(00:52 12-05-2021)
     ✔ Add UI Elements @created(18:53 11-05-2021) @done(02:15 13-05-2021)
-    → Add values for task counters (for each category) @created(02:14 13-05-2021)
-    → Add status bar for each category @created(02:14 13-05-2021)
+    ✔ Add values for task counters (for each category) @created(02:14 13-05-2021) @done(00:50 14-05-2021)
+    ✔ Add status bar for each category @created(02:14 13-05-2021) @done(00:50 14-05-2021)
     → Define Data Structures @created(23:20 11-05-2021)
     → Data Persistence @created(18:53 11-05-2021)
     → Theming @created(18:54 11-05-2021)
@@ -11,6 +11,7 @@
 
 **Enhancements**:
     → Drag and Drop @created(18:54 11-05-2021)
-    Todo:
+    → Add clock to top right corner @created(00:12 14-05-2021)
+    Todo Details:
         → View to-dos in popup @created(19:45 11-05-2021)
         → Open to-dos as a new program (code.exe) @created(19:43 11-05-2021)
