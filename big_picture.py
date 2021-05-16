@@ -1,7 +1,17 @@
+
+
+
 # imports
 import datetime
+import uuid
 from dearpygui.core import *
 from dearpygui.simple import *
+from core_files import projectsDS as pds
+
+
+projects = {}
+
+statusCodes = {"To Do": "INI", "In Progress": "INP", "Done": "COM", "Archives": "ARC"}
 
 # font and other window settings
 add_additional_font("./fonts/CascadiaCodePL-Regular.otf", 20)
@@ -115,6 +125,10 @@ def moveToArchive(sender,data):
     move_item(item=greatGrandParent, parent="Archives")
     for elem in data:
         hide_item(elem)
+    elementId = grandParent[2:34]
+    status = statusCodes["Archives"]
+    currentProject = projects[elementId]
+    currentProject.updateStatus(status)
 
 def deleteTaskItem(sender,data):
     print("Deleting Item")
@@ -183,21 +197,33 @@ def moveTaskItemDown(sender, data):
 
 def changeTaskItemText(sender,data):
     print("Change to Project Title")
+    widgetName = data[0]
+    elementId = widgetName[2:34]
+    stage = data[1]
+    currentProject = projects[elementId]
+    newTitle = get_value(sender)
+    currentProject.updateTitle(newTitle)
+
 
 def add_task_item(sender, data):
-    parent = data[0]
-    itemNum = data[1]
-    title = data[2]
-    groupName = "##" + parent + "_group_" + str(itemNum)
-    childName = "##" + parent + "_child_" + str(itemNum)
+    parent = data
+    status = statusCodes[parent]
+    newTaskId = uuid.uuid4().hex
+    taskItemCount = int(get_value(parent + " Task Items")) + 1
+    pName = "New " + parent + " Project " + str(taskItemCount)
+    newProject = pds.Project(newTaskId, pName, status)
+    global projects
+    projects[newTaskId] = newProject
+    groupName = "##" + newTaskId + "_group_"
+    childName = "##" + newTaskId + "_child_"
 
     incrementTaskItemCount(parent)
 
     # Add widget
     add_group(name=groupName, parent=parent)
     add_spacing(count=7, parent=groupName)
-    add_child(name=childName, parent=groupName,autosize_x=True, autosize_y=False, height=80, horizontal_scrollbar=True)
-    with menu_bar(childName+"Menu"):
+    add_child(name=childName, parent=groupName, autosize_x=True, autosize_y=False, height=80, horizontal_scrollbar=True)
+    with menu_bar(childName+"menu"):
         add_button(childName+"left", direction=get_value("Left Arrow"), arrow=True, callback=moveTaskItemLeft, callback_data=childName+"right")
         if parent=="To Do" or parent=="Archives":
             hide_item(childName+"left")
@@ -210,8 +236,7 @@ def add_task_item(sender, data):
         add_button(childName+"right", direction=get_value("Right Arrow"), arrow=True, callback=moveTaskItemRight, callback_data=childName+"left")
         if parent == "Done" or parent =="Archives":
             hide_item(childName+"right")
-    # add_spacing(count=3)
-    # add_separator()
+
     add_spacing(count=3)
     add_button(childName+"top", direction=get_value("Up Arrow"), arrow=True, callback=moveTaskItemUp)
     add_same_line()
@@ -219,7 +244,7 @@ def add_task_item(sender, data):
     add_same_line()
     add_input_text(childName+"s3", width=1)
     add_same_line()
-    add_input_text(childName+"Project", default_value=title, width=-1, callback=changeTaskItemText)
+    add_input_text(childName+"Project", default_value=pName, width=-1, callback=changeTaskItemText, callback_data=[groupName, parent])
     end()
     add_spacing(count=7, parent=groupName)
     end()
@@ -259,11 +284,12 @@ with window("Done", autosize=False, no_title_bar=False, no_scrollbar=False, no_c
     # end()
     pass
 
+
 with window("Status To Do", autosize=False, no_title_bar=True, no_scrollbar=False, no_move=True, no_resize=True):
     set_item_style_var("Status To Do", mvGuiStyleVar_WindowBorderSize, [0])
     add_text("\t\t\t\t")
     add_same_line()
-    add_button("Add Task##To Do", parent="Status To Do", callback=add_task_item, callback_data=["To Do", 99, "New To Do"])
+    add_button("Add Task##To Do", parent="Status To Do", callback=add_task_item, callback_data="To Do")
     add_spacing(count=3)
     add_text("\t\tStatus: ")
     add_same_line()
@@ -279,7 +305,7 @@ with window("Status In Progress", autosize=False, no_title_bar=True, no_scrollba
     set_item_style_var("Status In Progress", mvGuiStyleVar_WindowBorderSize, [0])
     add_text("\t\t\t\t")
     add_same_line()
-    add_button("Add Task##In Progress", parent="Status In Progress", callback=add_task_item, callback_data=["In Progress", 99, "New In Progress"])
+    add_button("Add Task##In Progress", parent="Status In Progress", callback=add_task_item, callback_data="In Progress")
     add_spacing(count=3)
     add_text("\t\tStatus: ")
     add_same_line()
@@ -295,7 +321,7 @@ with window("Status Done", autosize=False, no_title_bar=True, no_scrollbar=False
     set_item_style_var("Status Done", mvGuiStyleVar_WindowBorderSize, [0])
     add_text("\t\t\t\t")
     add_same_line()
-    add_button("Add Task##Done", parent="Status Done", callback=add_task_item, callback_data=["Done", 99, "New Done"])
+    add_button("Add Task##Done", parent="Status Done", callback=add_task_item, callback_data="Done")
     add_spacing(count=3)
     add_text("\t\tStatus: ")
     add_same_line()
@@ -333,7 +359,6 @@ if __name__ == '__main__':
     set_value("To Do Task Items", "0")
     set_value("In Progress Task Items", "0")
     set_value("Done Task Items", "0")
-    # set_value("Right Arrow", 1)
 
     # ! For Theming
     # show_style_editor() 
@@ -341,13 +366,17 @@ if __name__ == '__main__':
    
 
 
-    for i in range(1,4):
-        add_task_item("To Do", ["To Do", i, "Todo Task"+str(i)])
-        add_task_item("In Progress", ["In Progress", i, "In Progress Task "+str(i)])
-        add_task_item("Done", ["Done", i, "Done Task"+str(i)])
+
     start_dearpygui(primary_window="Main")
 
-
+    for key in projects:
+        print(key)
+        print(projects[key].projectId)
+        print(projects[key].projectName)
+        print(projects[key].projectStatus)
+        print(projects[key].projectCreationDate)
+        print(projects[key].projectModifiedDate)
+        print("******************************")
     stop_dearpygui()
 
 
