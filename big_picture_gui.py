@@ -4,6 +4,7 @@
 # imports
 import datetime
 import uuid
+import _pickle as pickle
 from dearpygui.core import *
 from dearpygui.simple import *
 from core_files import projectsDS as pds
@@ -12,6 +13,7 @@ from core_files import projectsDS as pds
 projects = {}
 
 statusCodes = {"To Do": "INI", "In Progress": "INP", "Done": "COM", "Archives": "ARC"}
+inverseStatusCodes = {"INI": "To Do", "INP": "In Progress", "COM": "Done", "ARC":"Archives"}
 
 # font and other window settings
 add_additional_font("./fonts/CascadiaCodePL-Regular.otf", 20)
@@ -118,66 +120,78 @@ def decrementTaskItemCount(taskItem, totalDec = True):
 
 def moveToArchive(sender,data):
     print("Moving task to Archive")
-    grandParent = get_item_parent(get_item_parent(sender))
-    greatGrandParent = get_item_parent(grandParent)
-    stage = get_item_parent(greatGrandParent)
+    widget = data[0]
+    stage = data[1]
+    elements = data[2:-1]
     decrementTaskItemCount(stage)
-    move_item(item=greatGrandParent, parent="Archives")
-    for elem in data:
+    move_item(item=widget, parent="Archives")
+    for elem in elements:
         hide_item(elem)
-    elementId = grandParent[2:34]
+    elementId = widget[2:34]
     status = statusCodes["Archives"]
     currentProject = projects[elementId]
     currentProject.updateStatus(status)
 
-def deleteTaskItem(sender,data):
+def deleteProjectItem(sender,data):
     print("Deleting Item")
-    grandParent = get_item_parent(get_item_parent(sender))
-    greatGrandParent = get_item_parent(grandParent)
-    stage = get_item_parent(greatGrandParent)
+    widget = data[0]
+    stage = data[1]
     if stage != "Archives":
         decrementTaskItemCount(stage)
-    delete_item(greatGrandParent)
+    delete_item(widget)
+    elementId = widget[2:34]
+    del projects[elementId]
 
-def moveTaskItemLeft(sender, data):
+def moveProjectItemLeft(sender, data):
     print("Moving Task to left")
-    oldParent = get_item_parent(get_item_parent(sender))
-    grandParent = get_item_parent(oldParent)
-    greatGrandParent = get_item_parent(grandParent)
-    print(oldParent,grandParent,greatGrandParent)
-    if greatGrandParent == "Done":
-        move_item(item=grandParent, parent="In Progress")
-        show_item(data)
+    widget = get_item_parent(get_item_parent(get_item_parent(sender)))
+    stage = get_item_parent(widget)
+    arrowButton = data
+    elementId = widget[2:34]
+    currentProject = projects[elementId]
+
+    if stage == "Done":
+        move_item(item=widget, parent="In Progress")
+        show_item(arrowButton)
         decrementTaskItemCount("Done", False)
         incrementTaskItemCount("In Progress", False)
+        status = statusCodes["In Progress"]
+        currentProject.updateStatus(status)
 
-    elif greatGrandParent == "In Progress":
-        move_item(item=grandParent, parent="To Do")
-        show_item(data)
+    elif stage == "In Progress":
+        move_item(item=widget, parent="To Do")
+        show_item(arrowButton)
         hide_item(sender)
         decrementTaskItemCount("In Progress", False)
         incrementTaskItemCount("To Do", False)
+        status = statusCodes["To Do"]
+        currentProject.updateStatus(status)
 
-def moveTaskItemRight(sender, data):
+def moveProjectItemRight(sender, data):
     print("Moving Task to right")
-    oldParent = get_item_parent(get_item_parent(sender))
-    grandParent = get_item_parent(oldParent)
-    greatGrandParent = get_item_parent(grandParent)
-    print(oldParent,grandParent,greatGrandParent)
-    if greatGrandParent == "To Do":
-        move_item(item=grandParent, parent="In Progress")
-        show_item(data)
+    widget = get_item_parent(get_item_parent(get_item_parent(sender)))
+    stage = get_item_parent(widget)
+    arrowButton = data
+    elementId = widget[2:34]
+    currentProject = projects[elementId]
+    if stage == "To Do":
+        move_item(item=widget, parent="In Progress")
+        show_item(arrowButton)
         decrementTaskItemCount("To Do", False)
         incrementTaskItemCount("In Progress", False)
+        status = statusCodes["In Progress"]
+        currentProject.updateStatus(status)
 
-    elif greatGrandParent == "In Progress":
-        move_item(item=grandParent, parent="Done")
-        show_item(data)
+    elif stage == "In Progress":
+        move_item(item=widget, parent="Done")
+        show_item(arrowButton)
         hide_item(sender)
         decrementTaskItemCount("In Progress", False)
         incrementTaskItemCount("Done", False)
+        status = statusCodes["Done"]
+        currentProject.updateStatus(status)
 
-def moveTaskItemUp(sender, data):
+def moveProjectItemUp(sender, data):
     print("Moving Task to up")
     parent = get_item_parent(sender)
     grandParent = get_item_parent(parent)
@@ -186,7 +200,7 @@ def moveTaskItemUp(sender, data):
     else:
         move_item_up(parent)
 
-def moveTaskItemDown(sender, data):
+def moveProjectItemDown(sender, data):
     print("Moving Task to down")
     parent = get_item_parent(sender)
     grandParent = get_item_parent(parent)
@@ -195,17 +209,46 @@ def moveTaskItemDown(sender, data):
     else:
         move_item_down(parent)
 
-def changeTaskItemText(sender,data):
+def changeProjectItemText(sender,data):
     print("Change to Project Title")
     widgetName = data[0]
     elementId = widgetName[2:34]
-    stage = data[1]
     currentProject = projects[elementId]
     newTitle = get_value(sender)
     currentProject.updateTitle(newTitle)
 
 
-def add_task_item(sender, data):
+def addWidget(parent, groupName, childName, pName):
+    add_group(name=groupName, parent=parent)
+    add_spacing(count=7, parent=groupName)
+    add_child(name=childName, parent=groupName, autosize_x=True, autosize_y=False, height=80, horizontal_scrollbar=True)
+    with menu_bar(childName+"menu"):
+        add_button(childName+"left", direction=get_value("Left Arrow"), arrow=True, callback=moveProjectItemLeft, callback_data=childName+"right")
+        if parent=="To Do" or parent=="Archives":
+            hide_item(childName+"left")
+        add_input_text(childName+"s1", width=1)
+        add_button(childName+"archives", label="Move to Archives", callback=moveToArchive, callback_data=[groupName, parent, childName+"left", childName+"right", childName+"archives"])
+        if parent == "Archives":
+            hide_item(childName+"archives")
+        add_button(childName+"delete", label="Delete", callback=deleteProjectItem, callback_data=[groupName, parent])
+        add_input_text(childName+"s2", width=1)
+        add_button(childName+"right", direction=get_value("Right Arrow"), arrow=True, callback=moveProjectItemRight, callback_data=childName+"left")
+        if parent == "Done" or parent =="Archives":
+            hide_item(childName+"right")
+
+    add_spacing(count=3)
+    add_button(childName+"top", direction=get_value("Up Arrow"), arrow=True, callback=moveProjectItemUp)
+    add_same_line()
+    add_button(childName+"down", direction=get_value("Down Arrow"), arrow=True, callback=moveProjectItemDown)
+    add_same_line()
+    add_input_text(childName+"s3", width=1)
+    add_same_line()
+    add_input_text(childName+"Project", default_value=pName, width=-1, on_enter=True, callback=changeProjectItemText, callback_data=[groupName, parent])
+    end()
+    add_spacing(count=7, parent=groupName)
+    end()
+
+def addNewProjectItem(sender, data):
     parent = data
     status = statusCodes[parent]
     newTaskId = uuid.uuid4().hex
@@ -219,36 +262,29 @@ def add_task_item(sender, data):
 
     incrementTaskItemCount(parent)
 
-    # Add widget
-    add_group(name=groupName, parent=parent)
-    add_spacing(count=7, parent=groupName)
-    add_child(name=childName, parent=groupName, autosize_x=True, autosize_y=False, height=80, horizontal_scrollbar=True)
-    with menu_bar(childName+"menu"):
-        add_button(childName+"left", direction=get_value("Left Arrow"), arrow=True, callback=moveTaskItemLeft, callback_data=childName+"right")
-        if parent=="To Do" or parent=="Archives":
-            hide_item(childName+"left")
-        add_input_text(childName+"s1", width=1)
-        add_button(childName+"archives", label="Move to Archives", callback=moveToArchive, callback_data=[childName+"left", childName+"right", childName+"archives"])
-        if parent == "Archives":
-            hide_item(childName+"archives")
-        add_button(childName+"delete", label="Delete", callback=deleteTaskItem)
-        add_input_text(childName+"s2", width=1)
-        add_button(childName+"right", direction=get_value("Right Arrow"), arrow=True, callback=moveTaskItemRight, callback_data=childName+"left")
-        if parent == "Done" or parent =="Archives":
-            hide_item(childName+"right")
-
-    add_spacing(count=3)
-    add_button(childName+"top", direction=get_value("Up Arrow"), arrow=True, callback=moveTaskItemUp)
-    add_same_line()
-    add_button(childName+"down", direction=get_value("Down Arrow"), arrow=True, callback=moveTaskItemDown)
-    add_same_line()
-    add_input_text(childName+"s3", width=1)
-    add_same_line()
-    add_input_text(childName+"Project", default_value=pName, width=-1, callback=changeTaskItemText, callback_data=[groupName, parent])
-    end()
-    add_spacing(count=7, parent=groupName)
-    end()
+    addWidget(parent, groupName, childName, pName)
     
+
+def addExistingProjectItems(projectItem):
+    groupName = "##" + projectItem.projectId + "_group_"
+    childName = "##" + projectItem.projectId + "_child_"
+    pName = projectItem.projectName
+    status = projectItem.projectStatus
+    parent =inverseStatusCodes[status]
+    incrementTaskItemCount(parent)
+    addWidget(parent, groupName, childName, pName)
+
+def writeToFile():
+    with open("./storedProjects", 'wb') as outFile:
+        global projects
+        # print(projects)
+        outFile.write(pickle.dumps(projects))
+
+def initialiseProjectsList(storedProjects):
+    global projects
+    projects = storedProjects
+    for key in projects:
+        addExistingProjectItems(projects[key])
 
 with window("Top Panel", autosize=False, no_title_bar=True, no_scrollbar=False, no_close=True, collapsed=False, no_collapse=True, no_resize=True, no_move=True, no_background=False, horizontal_scrollbar=True):
     set_item_style_var("Top Panel", mvGuiStyleVar_WindowBorderSize, [0])
@@ -289,7 +325,7 @@ with window("Status To Do", autosize=False, no_title_bar=True, no_scrollbar=Fals
     set_item_style_var("Status To Do", mvGuiStyleVar_WindowBorderSize, [0])
     add_text("\t\t\t\t")
     add_same_line()
-    add_button("Add Task##To Do", parent="Status To Do", callback=add_task_item, callback_data="To Do")
+    add_button("Add Task##To Do", parent="Status To Do", callback=addNewProjectItem, callback_data="To Do")
     add_spacing(count=3)
     add_text("\t\tStatus: ")
     add_same_line()
@@ -305,7 +341,7 @@ with window("Status In Progress", autosize=False, no_title_bar=True, no_scrollba
     set_item_style_var("Status In Progress", mvGuiStyleVar_WindowBorderSize, [0])
     add_text("\t\t\t\t")
     add_same_line()
-    add_button("Add Task##In Progress", parent="Status In Progress", callback=add_task_item, callback_data="In Progress")
+    add_button("Add Task##In Progress", parent="Status In Progress", callback=addNewProjectItem, callback_data="In Progress")
     add_spacing(count=3)
     add_text("\t\tStatus: ")
     add_same_line()
@@ -321,7 +357,7 @@ with window("Status Done", autosize=False, no_title_bar=True, no_scrollbar=False
     set_item_style_var("Status Done", mvGuiStyleVar_WindowBorderSize, [0])
     add_text("\t\t\t\t")
     add_same_line()
-    add_button("Add Task##Done", parent="Status Done", callback=add_task_item, callback_data="Done")
+    add_button("Add Task##Done", parent="Status Done", callback=addNewProjectItem, callback_data="Done")
     add_spacing(count=3)
     add_text("\t\tStatus: ")
     add_same_line()
@@ -346,8 +382,6 @@ with window("Main", horizontal_scrollbar=True, no_scrollbar=False):
             add_menu_item("Reset to Default Layout", callback=resizeWindows)
     
 
-
-
 if __name__ == '__main__':
     set_start_callback(resizeWindows)
     set_resize_callback(resizeWindows)
@@ -362,21 +396,25 @@ if __name__ == '__main__':
 
     # ! For Theming
     # show_style_editor() 
+    try:
+        with open('storedProjects', 'rb') as inFile:
+            try:
+                storedProjects = pickle.load(inFile)
+                print("Stored Projects (if any) loaded in memory!")
+                initialiseProjectsList(storedProjects)
+            
+            except:
+                print("No stored projects found!")
+    except:
+        with open('storedProjects', 'wb') as inFile:
+            pass
 
-   
-
-
-
+    
+    
     start_dearpygui(primary_window="Main")
 
-    for key in projects:
-        print(key)
-        print(projects[key].projectId)
-        print(projects[key].projectName)
-        print(projects[key].projectStatus)
-        print(projects[key].projectCreationDate)
-        print(projects[key].projectModifiedDate)
-        print("******************************")
+    writeToFile()
+    print("Projects persisted in memory... Exiting program")
     stop_dearpygui()
 
 
