@@ -1,3 +1,8 @@
+__author__ = 'Ankit Pant'
+__email__ = "maven7@tutanota.com"
+__status__ = "alpha"
+
+# imports
 import uuid
 import _pickle as pickle
 from pathlib import Path
@@ -240,7 +245,6 @@ def addExistingProjectItems(projectItem):
     pName = projectItem.projectName
     status = projectItem.projectStatus
     parent =inverseStatusCodes[status]
-    print(parent)
     if parent != "Archives":
         incrementTaskItemCount(parent)
     addWidget(parent, groupName, childName, pName)

@@ -1,3 +1,7 @@
+__author__ = 'Ankit Pant'
+__email__ = "maven7@tutanota.com"
+__status__ = "alpha"
+
 import datetime
 class Project:
 

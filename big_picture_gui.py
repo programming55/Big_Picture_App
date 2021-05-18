@@ -1,4 +1,6 @@
-
+__author__ = 'Ankit Pant'
+__email__ = "maven7@tutanota.com"
+__status__ = "alpha"
 
 
 # imports
@@ -9,6 +11,7 @@ from dearpygui.core import *
 from dearpygui.simple import *
 from core_files import projectsDS as pds
 from core_files import bpUtils
+from core_files import bpTheming
 
 
 
@@ -18,15 +21,21 @@ set_main_window_title("The Big Picture")
 set_main_window_resizable(False)
 set_main_window_pos(100,30)
 
-
+add_value("Theme", "Aurora")
+set_value("Theme", "Aurora")
 
 # set whole Application Theme
 def setTheme(sender, data):
     """
     Uses the set_theme internal function of dearpygui to set the theme of the window
     """
-
-    set_theme(sender)
+    # for custom theme
+    if sender == "Aurora":
+        set_value("Theme", "Aurora")
+    else:
+        # for predefined themes
+        thm = sender[0:-6]
+        set_value("Theme", thm)
 
 
 # reposition and resize windows
@@ -186,15 +195,16 @@ with window("Status Done", autosize=False, no_title_bar=True, no_scrollbar=False
 
 
 with window("Main", horizontal_scrollbar=True, no_scrollbar=False):
-    set_theme("Gold")
-    set_style_window_title_align(0.5,0.5)
+    bpTheming.setTheme()
     with menu_bar('Main Menu'):
         with menu("File"):
             add_menu_item("Save", callback=bpUtils.writeToFile)
         with menu("Themes"):
-            add_menu_item("Gold", callback=setTheme)
-            add_menu_item("Dark", callback=setTheme)
-            add_menu_item("Classic", callback=setTheme)
+            add_menu_item("Aurora", callback=setTheme)
+            add_menu_item("Gold (Mod)", callback=setTheme)
+            add_menu_item("Light (Mod)", callback=setTheme)
+            add_menu_item("Dark (Mod)", callback=setTheme)
+            add_menu_item("Classic (Mod)", callback=setTheme)
         with menu("Layout"):
             add_menu_item("Reset to Default Layout", callback=resizeWindows)
     
@@ -205,6 +215,7 @@ if __name__ == '__main__':
     """
     set_start_callback(resizeWindows)
     set_resize_callback(resizeWindows)
+    set_render_callback(bpTheming.setTheme)
     add_value("Left Arrow", 0)
     add_value("Right Arrow", 1)
     add_value("Up Arrow", 2)
@@ -214,9 +225,7 @@ if __name__ == '__main__':
     set_value("In Progress Task Items", "0")
     set_value("Done Task Items", "0")
 
-    # ! For Theming
-    # show_style_editor() 
-
+    # Read stored project items
     filePath = Path("./storedProjects")
     try:
         with open(filePath, 'rb') as inFile:
@@ -232,12 +241,20 @@ if __name__ == '__main__':
         with open('storedProjects', 'wb') as inFile:
             pass
 
+
+     # ! For Theming
+    # show_style_editor()
     
     
+    # Start GUI
     start_dearpygui(primary_window="Main")
 
+
+    # Save current project items to persistent storage
     bpUtils.writeToFile()
     print("Projects persisted in memory... Exiting program")
+
+    # Stop GUI
     stop_dearpygui()
 
 
